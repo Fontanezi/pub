@@ -1,19 +1,16 @@
-TIPO_INGRESSO,DESFECHO,mean,median,std,count
-CONV_PEC_G,Conclusão,11.31,11.42,0.8,4
-CONV_PEC_G,Evasão,8.75,8.75,,1
-CONV_PEC_G,Outros,10.6,10.6,,1
+INGRESSO,DESFECHO,mean,median,std,count
 ENEM_SISU,Conclusão,9.59,9.24,1.82,146
 ENEM_SISU,Continua na USP,4.3,2.5,2.6,15
 ENEM_SISU,Evasão,5.72,5.33,3.76,80
-ENEM_USP,Continua na USP,2.19,2.19,,1
-ENEM_USP,Evasão,4.5,4.5,,1
 FUVEST,Conclusão,10.4,10.17,2.32,1557
 FUVEST,Continua na USP,4.77,4.02,3.18,173
 FUVEST,Evasão,7.86,7.29,4.59,788
 FUVEST,Outros,4.11,5.06,2.18,3
 FUVEST,Saída para outra IES,6.9,7.37,2.95,6
-GRADUADO,Evasão,4.69,4.69,3.55,2
-OLIMP,Conclusão,10.16,10.16,,1
+Outros,Conclusão,11.08,11.42,0.86,5
+Outros,Continua na USP,2.19,2.19,,1
+Outros,Evasão,5.66,5.85,2.91,4
+Outros,Outros,10.6,10.6,,1
 TRANSF_EXTERNA,Conclusão,10.69,9.91,2.6,19
 TRANSF_EXTERNA,Evasão,10.57,11.6,3.11,6
 TRANSF_INTERNA,Conclusão,9.31,9.91,2.59,24
