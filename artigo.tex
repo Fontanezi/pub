@@ -590,17 +590,34 @@ institucional.
 \subsection*{Carga, pré-processamento e agrupamento de ingressos}
 
 \begin{lstlisting}[style=python, caption={Carga e agrupamento das formas de ingresso}]
+"""
+Analise de Evasao e Conclusao -- Sistemas de Informacao EACH-USP (2005-2025)
+Universidade de Sao Paulo -- Escola de Artes, Ciencias e Humanidades
+Professor Orientador: Marcelo Morandini
+Autor: Joao Fontanezi
+"""
 import pandas as pd
 import numpy as np
 
 df = pd.read_excel('BASE_ALUNOS_FINAL.xlsx')
-df['TEMPO_SEMESTRES'] = df['TEMPO_CURSO'] / 180
-df['ANO_INGRESSO']    = df['DATA_INGRESSO'].dt.year
+
+# Datas ja vem como datetime via openpyxl
+df['DATA_INGRESSO']     = pd.to_datetime(df['DATA_INGRESSO'],     errors='coerce')
+df['DATA_ENCERRAMENTO'] = pd.to_datetime(df['DATA_ENCERRAMENTO'], errors='coerce')
+df['ANO_INGRESSO']      = df['DATA_INGRESSO'].dt.year
+df['TEMPO_SEMESTRES']   = df['TEMPO_CURSO'] / 180
+df['CR_ACUMULADO']      = pd.to_numeric(df['CR_ACUMULADO'], errors='coerce')
 
 # Agrupamento: categorias com baixa representatividade -> "Outros"
 OUTROS_INGRESSO = {'CONV_PEC_G', 'GRADUADO', 'ENEM_USP', 'OLIMP'}
-df['INGRESSO'] = df['TIPO_INGRESSO'].apply(
-    lambda x: 'Outros' if x in OUTROS_INGRESSO else x)
+
+def agrupar_ingresso(ti):
+    if ti in OUTROS_INGRESSO:
+        return 'Outros'
+    return ti
+
+df['INGRESSO'] = df['TIPO_INGRESSO'].apply(agrupar_ingresso)
+INGRESSO_ORDEM = ['FUVEST', 'ENEM_SISU', 'TRANSF_INTERNA', 'TRANSF_EXTERNA', 'Outros']
 
 # Classificacao de desfechos
 EVASAO       = {'ABANDONO_FREQUENCIA','ABANDONO_MATRICULA','CANC_CREDITO',
@@ -609,17 +626,19 @@ CONTINUA_USP = {'REINGRESSO','TRANSF_INT'}
 SAIDA_EXT    = {'TRANSF_EXT','CANC_OUTRA_IES'}
 
 def classificar_desfecho(te):
-    if te == 'CONCLUSAO':      return 'Conclusao'
-    if te in EVASAO:           return 'Evasao'
-    if te in CONTINUA_USP:     return 'Continua na USP'
-    if te in SAIDA_EXT:        return 'Saida para outra IES'
+    if te == 'CONCLUSAO':  return 'Conclusao'
+    if te in EVASAO:       return 'Evasao'
+    if te in CONTINUA_USP: return 'Continua na USP'
+    if te in SAIDA_EXT:    return 'Saida para outra IES'
     return 'Outros'
 
 df['DESFECHO'] = df['TIPO_ENCERRAMENTO'].apply(classificar_desfecho)
 df['EVADIU']   = (df['DESFECHO'] == 'Evasao').astype(int)
+df['CONCLUIU'] = (df['DESFECHO'] == 'Conclusao').astype(int)
 
-# Grupos para testes inferenciais
-GRUPOS_INFER = ['FUVEST', 'ENEM_SISU']
+# Grupos para testes inferenciais e coortes validas
+GRUPOS_INFER        = ['FUVEST', 'ENEM_SISU']
+df['COORTE_VALIDA'] = df['ANO_INGRESSO'] <= 2021
 \end{lstlisting}
 
 \subsection*{Análise de sobrevivência --- Kaplan-Meier com dois painéis}
@@ -628,23 +647,26 @@ GRUPOS_INFER = ['FUVEST', 'ENEM_SISU']
 from lifelines import KaplanMeierFitter
 from lifelines.statistics import logrank_test
 
+# Subconjunto para analise inferencial: apenas FUVEST e ENEM_SISU
+df_km = df[df['INGRESSO'].isin(GRUPOS_INFER)].copy()
+df_km = df_km[df_km['TEMPO_SEMESTRES'].notna() & (df_km['TEMPO_SEMESTRES'] > 0)]
+
 fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
-# Painel esquerdo: inferencial (FUVEST vs ENEM_SISU, com IC)
+# Painel esquerdo: inferencial (FUVEST vs ENEM_SISU, com IC 95%)
 kmfs = {}
 for grupo in GRUPOS_INFER:
-    sub = df[df['INGRESSO'] == grupo]
+    sub = df_km[df_km['INGRESSO'] == grupo]
     kmf = KaplanMeierFitter()
     kmf.fit(sub['TEMPO_SEMESTRES'],
             event_observed=sub['EVADIU'], label=grupo)
-    kmf.plot_survival_function(ax=axes[0], ci_show=True)
+    kmf.plot_survival_function(ax=axes[0], ci_show=True, linewidth=2)
     kmfs[grupo] = (sub['TEMPO_SEMESTRES'], sub['EVADIU'])
 
 # Painel direito: descritivo (todos os grupos, sem IC)
-INGRESSO_ORDEM = ['FUVEST','ENEM_SISU','TRANSF_INTERNA',
-                  'TRANSF_EXTERNA','Outros']
+df_km_all = df[df['TEMPO_SEMESTRES'].notna() & (df['TEMPO_SEMESTRES'] > 0)].copy()
 for grupo in INGRESSO_ORDEM:
-    sub = df[df['INGRESSO'] == grupo]
+    sub = df_km_all[df_km_all['INGRESSO'] == grupo]
     if len(sub) < 5: continue
     kmf = KaplanMeierFitter()
     kmf.fit(sub['TEMPO_SEMESTRES'],
@@ -652,11 +674,14 @@ for grupo in INGRESSO_ORDEM:
             label=f'{grupo} (n={len(sub)})')
     kmf.plot_survival_function(
         ax=axes[1], ci_show=False,
+        linewidth=2 if grupo in GRUPOS_INFER else 1.2,
         linestyle='-' if grupo in GRUPOS_INFER else '--')
 
-# Log-rank test
-lr = logrank_test(*kmfs['FUVEST'], *kmfs['ENEM_SISU'])
-print(f"Log-rank p={lr.p_value:.4f}")
+# Log-rank test: FUVEST vs ENEM_SISU
+T1, E1 = kmfs['FUVEST']
+T2, E2 = kmfs['ENEM_SISU']
+lr = logrank_test(T1, T2, event_observed_A=E1, event_observed_B=E2)
+print(f"Log-rank p={lr.p_value:.4f} (stat={lr.test_statistic:.4f})")
 \end{lstlisting}
 
 \subsection*{Testes de hipóteses e regressão logística}
@@ -669,28 +694,46 @@ from sklearn.model_selection import cross_val_score
 
 df_inf = df[df['INGRESSO'].isin(GRUPOS_INFER)].copy()
 
-# Qui-quadrado
-ct = pd.crosstab(df_inf['INGRESSO'],
-                 df_inf['DESFECHO'].apply(
-                     lambda x: 'Evasao' if x=='Evasao' else 'Nao-Evasao'))
-chi2, p, dof, _ = chi2_contingency(ct)
-print(f"chi2={chi2:.4f}, p={p:.4f}")
+# Qui-quadrado: evasao vs nao-evasao
+ct2 = pd.crosstab(df_inf['INGRESSO'],
+                  df_inf['DESFECHO'].apply(
+                      lambda x: 'Evasao' if x=='Evasao' else 'Nao-Evasao'))
+chi2, p, dof, _ = chi2_contingency(ct2)
+print(f"chi2 evasao={chi2:.4f}, p={p:.4f}")
+
+# Qui-quadrado: conclusao vs nao-conclusao
+ct3 = pd.crosstab(df_inf['INGRESSO'],
+                  df_inf['DESFECHO'].apply(
+                      lambda x: 'Conclusao' if x=='Conclusao' else 'Nao-Conclusao'))
+chi2_c, p_c, _, _ = chi2_contingency(ct3)
+print(f"chi2 conclusao={chi2_c:.4f}, p={p_c:.4f}")
 
 # Mann-Whitney: tempo de conclusao
-t_fuv = df_inf[(df_inf['INGRESSO']=='FUVEST') &
-               (df_inf['DESFECHO']=='Conclusao')]['TEMPO_SEMESTRES']
-t_ene = df_inf[(df_inf['INGRESSO']=='ENEM_SISU') &
-               (df_inf['DESFECHO']=='Conclusao')]['TEMPO_SEMESTRES']
-u, p_mw = mannwhitneyu(t_fuv, t_ene, alternative='two-sided')
-print(f"U={u:.0f}, p={p_mw:.4f}")
+t_fuv_c = df_inf[(df_inf['INGRESSO']=='FUVEST') &
+                 (df_inf['DESFECHO']=='Conclusao')]['TEMPO_SEMESTRES'].dropna()
+t_ene_c = df_inf[(df_inf['INGRESSO']=='ENEM_SISU') &
+                 (df_inf['DESFECHO']=='Conclusao')]['TEMPO_SEMESTRES'].dropna()
+u1, p1 = mannwhitneyu(t_fuv_c, t_ene_c, alternative='two-sided')
+print(f"MW conclusao: U={u1:.0f}, p={p1:.4f}")
+
+# Mann-Whitney: tempo ate evasao
+t_fuv_e = df_inf[(df_inf['INGRESSO']=='FUVEST') &
+                 (df_inf['DESFECHO']=='Evasao')]['TEMPO_SEMESTRES'].dropna()
+t_ene_e = df_inf[(df_inf['INGRESSO']=='ENEM_SISU') &
+                 (df_inf['DESFECHO']=='Evasao')]['TEMPO_SEMESTRES'].dropna()
+u2, p2 = mannwhitneyu(t_fuv_e, t_ene_e, alternative='two-sided')
+print(f"MW evasao:    U={u2:.0f}, p={p2:.4f}")
 
 # Regressao logistica (apenas FUVEST e ENEM_SISU)
-df_reg = df_inf[df_inf['DESFECHO'].isin(['Conclusao','Evasao'])].copy()
+df_reg = df[df['INGRESSO'].isin(GRUPOS_INFER) &
+            df['DESFECHO'].isin(['Conclusao','Evasao']) &
+            df['CR_ACUMULADO'].notna() &
+            df['TEMPO_SEMESTRES'].notna()].copy()
 df_reg['ING_BIN'] = (df_reg['INGRESSO'] == 'ENEM_SISU').astype(int)
-X = df_reg[['ING_BIN','TEMPO_SEMESTRES','CR_ACUMULADO']].values
-y = df_reg['EVADIU'].values
+X    = df_reg[['ING_BIN','TEMPO_SEMESTRES','CR_ACUMULADO']].values
+y    = df_reg['EVADIU'].values
 X_sc = StandardScaler().fit_transform(X)
-auc  = cross_val_score(LogisticRegression(), X_sc, y,
+auc  = cross_val_score(LogisticRegression(max_iter=500), X_sc, y,
                        cv=5, scoring='roc_auc')
 print(f"AUC: {auc.mean():.3f} +/- {auc.std():.3f}")
 \end{lstlisting}
