@@ -1,6 +1,8 @@
 """
 Análise de Evasão e Conclusão — Sistemas de Informação EACH-USP (2005–2025)
 Universidade de São Paulo — Escola de Artes, Ciências e Humanidades
+Professor Orientador: Marcelo Morandini
+Autor: João Fontanezi
 """
 
 import os
@@ -21,7 +23,6 @@ from sklearn.model_selection import cross_val_score
 
 warnings.filterwarnings('ignore')
 
-# ── Configurações visuais ────────────────────────────────────────────────────
 PALETTE_ING = {
     'FUVEST':           '#1f77b4',
     'ENEM_SISU':        '#ff7f0e',
@@ -59,8 +60,7 @@ df['TEMPO_SEMESTRES']   = df['TEMPO_CURSO'] / 180
 df['CR_ACUMULADO']      = pd.to_numeric(df['CR_ACUMULADO'], errors='coerce')
 
 # ── Agrupamento de formas de ingresso ─────────────────────────────────────────
-# CONV_PEC_G, GRADUADO, ENEM_USP, OLIMP → "Outros" (n muito pequeno)
-# TRANSF_INTERNA e TRANSF_EXTERNA mantidos nas análises descritivas
+
 OUTROS_INGRESSO = {'CONV_PEC_G', 'GRADUADO', 'ENEM_USP', 'OLIMP'}
 
 def agrupar_ingresso(ti):
@@ -70,7 +70,6 @@ def agrupar_ingresso(ti):
 
 df['INGRESSO'] = df['TIPO_INGRESSO'].apply(agrupar_ingresso)
 
-# Ordem para gráficos
 INGRESSO_ORDEM = ['FUVEST', 'ENEM_SISU', 'TRANSF_INTERNA', 'TRANSF_EXTERNA', 'Outros']
 
 # ── Classificação de desfecho ─────────────────────────────────────────────────
@@ -92,10 +91,8 @@ df['DESFECHO'] = df['TIPO_ENCERRAMENTO'].apply(classificar_desfecho)
 df['EVADIU']   = (df['DESFECHO'] == 'Evasão').astype(int)
 df['CONCLUIU'] = (df['DESFECHO'] == 'Conclusão').astype(int)
 
-# Grupos com volume suficiente para testes inferenciais
 GRUPOS_INFER = ['FUVEST', 'ENEM_SISU']
 
-# Coortes recentes excluídas das análises temporais
 df['COORTE_VALIDA'] = df['ANO_INGRESSO'] <= 2021
 
 print(f"\nDistribuição INGRESSO (agrupado):")
@@ -113,18 +110,15 @@ print("\nDesfechos gerais:")
 for d, n in df['DESFECHO'].value_counts().items():
     print(f"  {d}: {n} ({n/total*100:.1f}%)")
 
-# Cross-tab INGRESSO (agrupado) × Desfecho
 ct = pd.crosstab(df['INGRESSO'], df['DESFECHO'])
 ct = ct.reindex(INGRESSO_ORDEM)
 ct_pct = ct.div(ct.sum(axis=1), axis=0) * 100
 print("\nCross-tab % (ingresso agrupado × desfecho):\n", ct_pct.round(1))
 
-# Tempo médio
 tempo_stats = df.groupby(['INGRESSO', 'DESFECHO'])['TEMPO_SEMESTRES'].agg(
     ['mean','median','std','count']).round(2)
 print("\nTempo (semestres):\n", tempo_stats)
 
-# CR acumulado
 cr_stats = df.groupby('DESFECHO')['CR_ACUMULADO'].agg(
     ['mean','median','std','count']).round(2)
 print("\nCR acumulado:\n", cr_stats)
@@ -141,7 +135,6 @@ print("=" * 60)
 
 desfechos_ordem = ['Conclusão','Evasão','Continua na USP','Saída para outra IES','Outros']
 
-# ── Fig 1: Barras empilhadas — desfecho por ingresso (agrupado)
 ct_plot = ct_pct.reindex(columns=[d for d in desfechos_ordem if d in ct_pct.columns], fill_value=0)
 fig, ax = plt.subplots(figsize=(11, 6))
 bottom = np.zeros(len(ct_plot))
@@ -155,7 +148,6 @@ for d in ct_plot.columns:
                     fontsize=8.5, color='white', fontweight='bold')
     bottom += vals
 
-# Anotação de n
 for i, ing in enumerate(ct_plot.index):
     n = ct.loc[ing].sum() if ing in ct.index else 0
     ax.text(i, 102, f'n={n}', ha='center', va='bottom', fontsize=8, color='gray')
@@ -171,7 +163,6 @@ plt.savefig(f'{OUT}/fig1_desfecho_por_ingresso.png')
 plt.close()
 print("  Fig 1 salva.")
 
-# ── Fig 2: Motivos de evasão
 evadidos = df[df['DESFECHO'] == 'Evasão']
 motivos = evadidos['TIPO_ENCERRAMENTO'].value_counts()
 MOTIVO_LABELS = {
@@ -197,7 +188,6 @@ plt.savefig(f'{OUT}/fig2_motivos_evasao.png')
 plt.close()
 print("  Fig 2 salva.")
 
-# ── Fig 3: Boxplot — tempo por ingresso e desfecho (todos os grupos descritivos)
 df_box = df[df['INGRESSO'].isin(INGRESSO_ORDEM) &
             df['DESFECHO'].isin(['Conclusão', 'Evasão'])].copy()
 fig, ax = plt.subplots(figsize=(12, 6))
@@ -217,7 +207,6 @@ plt.savefig(f'{OUT}/fig3_boxplot_tempo.png')
 plt.close()
 print("  Fig 3 salva.")
 
-# ── Fig 4: Histograma CR acumulado por desfecho
 fig, axes = plt.subplots(1, 2, figsize=(12, 5))
 for ax, des, cor in zip(axes, ['Conclusão', 'Evasão'], ['#2ca02c', '#d62728']):
     sub = df[df['DESFECHO'] == des]['CR_ACUMULADO'].dropna()
@@ -234,7 +223,6 @@ plt.savefig(f'{OUT}/fig4_hist_cr.png')
 plt.close()
 print("  Fig 4 salva.")
 
-# ── Fig 5: Evolução temporal geral (2005–2021)
 df_coorte = df[df['COORTE_VALIDA']].copy()
 evo = df_coorte.groupby('ANO_INGRESSO').apply(
     lambda g: pd.Series({
@@ -264,7 +252,6 @@ plt.savefig(f'{OUT}/fig5_evolucao_temporal.png')
 plt.close()
 print("  Fig 5 salva.")
 
-# ── Fig 6: Heatmap — evasão por coorte × ingresso (FUVEST + ENEM_SISU)
 df_heat = df[df['INGRESSO'].isin(GRUPOS_INFER) & df['COORTE_VALIDA']].copy()
 pivot = df_heat.pivot_table(index='ANO_INGRESSO', columns='INGRESSO',
                              values='EVADIU', aggfunc='mean') * 100
@@ -280,18 +267,15 @@ plt.close()
 print("  Fig 6 salva.")
 
 
-# ── 4. ANÁLISE DE SOBREVIVÊNCIA (KAPLAN-MEIER) ───────────────────────────────
 print("\n" + "=" * 60)
 print("4. ANÁLISE DE SOBREVIVÊNCIA — KAPLAN-MEIER")
 print("=" * 60)
 
-# KM principal: FUVEST vs ENEM_SISU (inferencial)
 df_km = df[df['INGRESSO'].isin(GRUPOS_INFER)].copy()
 df_km = df_km[df_km['TEMPO_SEMESTRES'].notna() & (df_km['TEMPO_SEMESTRES'] > 0)]
 
 fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
-# Painel esquerdo: FUVEST vs ENEM_SISU
 ax = axes[0]
 kmfs = {}
 for grupo, cor in zip(GRUPOS_INFER, ['#1f77b4', '#ff7f0e']):
@@ -307,7 +291,6 @@ ax.set_title('KM — FUVEST vs ENEM_SISU\n(inferencial)')
 ax.set_xlim(0); ax.set_ylim(0, 1.05)
 ax.legend(title='Ingresso')
 
-# Painel direito: todos os grupos descritivos (sem IC para não poluir)
 ax2 = axes[1]
 cores_km = {'FUVEST':'#1f77b4','ENEM_SISU':'#ff7f0e',
             'TRANSF_INTERNA':'#2ca02c','TRANSF_EXTERNA':'#d62728','Outros':'#9467bd'}
@@ -334,7 +317,6 @@ plt.savefig(f'{OUT}/fig7_kaplan_meier.png')
 plt.close()
 print("  Fig 7 (Kaplan-Meier) salva.")
 
-# Log-rank test
 T1, E1 = kmfs['FUVEST']
 T2, E2 = kmfs['ENEM_SISU']
 lr = logrank_test(T1, T2, event_observed_A=E1, event_observed_B=E2)
@@ -348,34 +330,29 @@ print("=" * 60)
 
 df_inf = df[df['INGRESSO'].isin(GRUPOS_INFER)].copy()
 
-# Qui-quadrado: evasão
 ct2 = pd.crosstab(df_inf['INGRESSO'],
                   df_inf['DESFECHO'].apply(lambda x: 'Evasão' if x=='Evasão' else 'Não-Evasão'))
 chi2, p, dof, _ = chi2_contingency(ct2)
 print(f"\n  χ² evasão:    χ²={chi2:.4f}, p={p:.4f}, gl={dof}")
 print(f"  Tabela:\n{ct2}")
 
-# Qui-quadrado: conclusão
 ct3 = pd.crosstab(df_inf['INGRESSO'],
                   df_inf['DESFECHO'].apply(lambda x: 'Conclusão' if x=='Conclusão' else 'Não-Conclusão'))
 chi2_c, p_c, _, _ = chi2_contingency(ct3)
 print(f"\n  χ² conclusão: χ²={chi2_c:.4f}, p={p_c:.4f}")
 
-# Mann-Whitney: tempo de conclusão
 t_fuv_c = df_inf[(df_inf['INGRESSO']=='FUVEST')    & (df_inf['DESFECHO']=='Conclusão')]['TEMPO_SEMESTRES'].dropna()
 t_ene_c = df_inf[(df_inf['INGRESSO']=='ENEM_SISU') & (df_inf['DESFECHO']=='Conclusão')]['TEMPO_SEMESTRES'].dropna()
 u1, p1 = mannwhitneyu(t_fuv_c, t_ene_c, alternative='two-sided')
 print(f"\n  Mann-Whitney tempo conclusão: U={u1:.0f}, p={p1:.4f}")
 print(f"    Mediana FUVEST={t_fuv_c.median():.2f} | ENEM_SISU={t_ene_c.median():.2f} sem")
 
-# Mann-Whitney: tempo até evasão
 t_fuv_e = df_inf[(df_inf['INGRESSO']=='FUVEST')    & (df_inf['DESFECHO']=='Evasão')]['TEMPO_SEMESTRES'].dropna()
 t_ene_e = df_inf[(df_inf['INGRESSO']=='ENEM_SISU') & (df_inf['DESFECHO']=='Evasão')]['TEMPO_SEMESTRES'].dropna()
 u2, p2 = mannwhitneyu(t_fuv_e, t_ene_e, alternative='two-sided')
 print(f"\n  Mann-Whitney tempo evasão:    U={u2:.0f}, p={p2:.4f}")
 print(f"    Mediana FUVEST={t_fuv_e.median():.2f} | ENEM_SISU={t_ene_e.median():.2f} sem")
 
-# Mann-Whitney: CR acumulado
 cr_c = df[df['DESFECHO']=='Conclusão']['CR_ACUMULADO'].dropna()
 cr_e = df[df['DESFECHO']=='Evasão']['CR_ACUMULADO'].dropna()
 u3, p3 = mannwhitneyu(cr_c, cr_e, alternative='two-sided')
@@ -426,7 +403,6 @@ coorte_det = df_c.groupby(['ANO_INGRESSO','INGRESSO']).apply(
 
 print(coorte_det[coorte_det['INGRESSO'].isin(GRUPOS_INFER)].to_string(index=False))
 
-# ── Fig 8: Evolução FUVEST vs ENEM_SISU por coorte
 df_evo2 = coorte_det[coorte_det['INGRESSO'].isin(GRUPOS_INFER)]
 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 for ax, metric, ylabel in zip(axes,
@@ -448,7 +424,6 @@ plt.savefig(f'{OUT}/fig8_evolucao_fuvest_enem.png')
 plt.close()
 print("  Fig 8 salva.")
 
-# ── Fig 9: Violin — tempo de conclusão (FUVEST e ENEM_SISU)
 df_vio = df[df['INGRESSO'].isin(GRUPOS_INFER) & (df['DESFECHO']=='Conclusão')]
 fig, ax = plt.subplots(figsize=(8, 5))
 sns.violinplot(data=df_vio, x='INGRESSO', y='TEMPO_SEMESTRES',
@@ -462,7 +437,6 @@ plt.savefig(f'{OUT}/fig9_violin_conclusao.png')
 plt.close()
 print("  Fig 9 salva.")
 
-# ── Fig 10: Evasão precoce vs tardia — grupos descritivos relevantes
 df_ev = df[df['DESFECHO']=='Evasão'].copy()
 df_ev['EVASAO_TIPO'] = df_ev['TEMPO_SEMESTRES'].apply(
     lambda x: 'Precoce (< 4 sem)' if x < 4 else 'Tardia (≥ 4 sem)')
@@ -493,7 +467,6 @@ plt.savefig(f'{OUT}/fig10_evasao_precoce_tardia.png')
 plt.close()
 print("  Fig 10 salva.")
 
-# ── Fig 11: Motivos de evasão por ingresso (FUVEST vs ENEM_SISU)
 ev2 = df[df['DESFECHO']=='Evasão'][df[df['DESFECHO']=='Evasão']['INGRESSO'].isin(GRUPOS_INFER)].copy()
 motivo_ing = pd.crosstab(ev2['TIPO_ENCERRAMENTO'], ev2['INGRESSO'])
 motivo_ing_pct = motivo_ing.div(motivo_ing.sum(axis=0), axis=1) * 100
