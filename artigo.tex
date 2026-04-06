@@ -58,7 +58,8 @@
   \large Estudo quantitativo com análise de sobrevivência e modelagem preditiva
 }
 \author{
-  Programa Unificado de Bolsas (PUB) \\
+  João Fontanezi \\
+  PUB - Professor Marcelo Morandini \\
   Escola de Artes, Ciências e Humanidades \\
   Universidade de São Paulo
 }
@@ -68,6 +69,7 @@
 \begin{document}
 
 \maketitle
+\newpage
 \tableofcontents
 \newpage
 
@@ -81,8 +83,8 @@ baseado na resolução de problemas e no protagonismo estudantil. Ao longo de
 vinte anos, o curso de \textbf{Sistemas de Informação} acumulou um histórico
 expressivo de matrículas, formando turmas desde a sua primeira coorte.
 
-A diversificação das formas de ingresso na USP --- com a incorporação do
-ENEM/SISU como via de entrada a partir de meados da década de 2010 --- traz
+A diversificação das formas de ingresso na USP com a incorporação do
+ENEM/SISU como via de entrada a partir de 2016 traz
 consigo uma questão relevante para o planejamento acadêmico: \emph{existem
 diferenças significativas nos padrões de conclusão, evasão e tempo de
 permanência entre estudantes que ingressaram por diferentes meios?}
@@ -97,29 +99,6 @@ análise de sobrevivência e regressão logística.
 Os resultados esperados fornecem subsídios para o planejamento acadêmico e
 para o desenvolvimento de políticas de permanência estudantil, especialmente
 no contexto das ações afirmativas e da ampliação do acesso por meio do ENEM.
-
-% =============================================================================
-\section{Revisão de Literatura}
-% =============================================================================
-
-A evasão no ensino superior é fenômeno multifatorial e amplamente estudado
-\citep{tinto1975, baggi2011}. \citet{tinto1975} propõe um modelo teórico que
-relaciona a evasão a fatores institucionais, acadêmicos e sociais, argumentando
-que a integração do estudante ao ambiente universitário é determinante para a
-permanência. No contexto brasileiro, \citet{silva_filho2007} estimam que a
-evasão anual em cursos de graduação presenciais supera 20\%, representando
-significativo desperdício de recursos públicos.
-
-Estudos mais recentes apontam que políticas de ações afirmativas e a
-diversificação das formas de ingresso --- como o Sistema de Seleção Unificada
-(SISU) --- alteram o perfil dos ingressantes e podem influenciar tanto as taxas
-de permanência quanto as de conclusão \citep{felicetti2014, vasconcelos2019}.
-
-A análise de sobrevivência tem sido empregada com crescente frequência no
-estudo da evasão universitária, pois permite modelar o \emph{tempo até o
-evento} (evasão ou conclusão), incorporando naturalmente os dados censurados
-\citep{borges2020}. O estimador de Kaplan-Meier permite comparar curvas de
-sobrevivência entre grupos sem impor pressupostos sobre a distribuição do tempo.
 
 % =============================================================================
 \section{Materiais e Métodos}
@@ -185,8 +164,8 @@ As categorias \texttt{CONV\_PEC\_G} ($n=6$), \texttt{GRADUADO} ($n=2$),
 \texttt{ENEM\_USP} ($n=2$) e \texttt{OLIMP} ($n=1$) foram agrupadas na
 categoria \textbf{``Outros''} por possuírem amostras insuficientes para
 qualquer análise individual. Este agrupamento não constitui tratamento de
-\emph{outliers} no sentido estatístico clássico --- não se trata de valores
-extremos em variável contínua --- mas sim do reconhecimento de
+\emph{outliers} no sentido estatístico clássico, por não se tratarem de valores
+extremos em variável contínua, mas sim do reconhecimento de
 \textbf{subgrupos com baixa representatividade amostral}.
 
 \texttt{TRANSF\_INTERNA} ($n=45$) e \texttt{TRANSF\_EXTERNA} ($n=25$)
@@ -547,15 +526,13 @@ ao desfecho; o modelo quantifica associações, não relações causais.
 Os resultados revelam um panorama nuançado sobre os padrões de conclusão e
 evasão no curso de Sistemas de Informação da EACH-USP.
 
-\textbf{Taxas gerais.} A taxa de conclusão de 61,5\% e de evasão de 31,4\%
-são consistentes com a literatura nacional para cursos tecnológicos
-\citep{silva_filho2007}.
+\textbf{Taxas gerais.} A taxa de conclusão de 61,5\% e de evasão de 31,4.\%
 
 \textbf{Comparação FUVEST vs.\ ENEM\_SISU.} A ausência de diferença
 significativa nas taxas absolutas ($p > 0{,}5$) contraria narrativas que
 associam o ingresso via ENEM a piores resultados. Contudo, o padrão temporal
 difere: alunos do ENEM\_SISU concluem mais rápido e, quando evadem, o fazem
-mais cedo --- com 46\% das evasões nos primeiros 4 semestres (vs.\ 33\% no
+mais cedo, com 46\% das evasões nos primeiros 4 semestres (vs.\ 33\% no
 FUVEST). Isso sugere maior \textbf{vulnerabilidade de adaptação inicial}.
 
 \textbf{Grupos descritivos.} TRANSF\_EXTERNA apresenta a maior taxa de
@@ -566,7 +543,7 @@ devem ser interpretados com cautela dado o $n$ pequeno.
 
 \textbf{Motivos de evasão.} O cancelamento por créditos insuficientes
 (43\%) e trancamento sem reingresso (22,5\%) indicam que a evasão é
-predominantemente \emph{passiva} --- o aluno vai perdendo o vínculo
+predominantemente \emph{passiva}: o aluno vai perdendo o vínculo
 gradualmente.
 
 \textbf{Limitações.} (i) A base não contém variáveis socioeconômicas;
@@ -583,12 +560,12 @@ Informação da EACH-USP (2005--2025). Os principais achados são:
 
 \begin{enumerate}
   \item A taxa de conclusão (61,5\%) e evasão (31,4\%) são comparáveis
-    à média nacional para cursos tecnológicos.
+    à média nacional para cursos na área de tecnologia.
   \item \textbf{FUVEST e ENEM\_SISU apresentam taxas absolutas de evasão e
     conclusão estatisticamente indistinguíveis} ($\chi^2$, $p > 0{,}5$).
   \item \textbf{O padrão temporal difere:} alunos do ENEM\_SISU concluem
     mais rápido (mediana 9,2 vs.\ 10,2 semestres) e evadidos saem mais cedo
-    (mediana 5,3 vs.\ 7,3 semestres) --- confirmado por Mann-Whitney e
+    (mediana 5,3 vs.\ 7,3 semestres), confirmado por Mann-Whitney e
     log-rank ($p < 0{,}002$).
   \item O principal motivo de evasão é o cancelamento administrativo por
     insuficiência de créditos (43\%), indicando abandono gradual.
@@ -722,21 +699,6 @@ print(f"AUC: {auc.mean():.3f} +/- {auc.std():.3f}")
 \bibliographystyle{plainnat}
 \begin{thebibliography}{99}
 
-\bibitem[Baggi e Lopes(2011)]{baggi2011}
-Baggi, C. A. S., \& Lopes, D. A. (2011).
-Evasão e avaliação institucional no ensino superior: uma discussão bibliográfica.
-\textit{Avaliação}, 16(2), 355--374.
-
-\bibitem[Borges et al.(2020)]{borges2020}
-Borges, F. T., Aquino, C. A. B., \& Puente-Palacios, K. (2020).
-Análise de sobrevivência aplicada ao estudo da evasão universitária.
-\textit{Estudos em Avaliação Educacional}, 31(78), 680--712.
-
-\bibitem[Felicetti e Morosini(2014)]{felicetti2014}
-Felicetti, V. L., \& Morosini, M. C. (2014).
-Do compromisso e implicação discentes: um estudo em cursos de licenciatura.
-\textit{Educar em Revista}, (51), 241--255.
-
 \bibitem[Kaplan e Meier(1958)]{kaplan1958}
 Kaplan, E. L., \& Meier, P. (1958).
 Nonparametric estimation from incomplete observations.
@@ -746,21 +708,6 @@ Nonparametric estimation from incomplete observations.
 Mantel, N. (1966).
 Evaluation of survival data and two new rank order statistics arising in its consideration.
 \textit{Cancer Chemotherapy Reports}, 50(3), 163--170.
-
-\bibitem[Silva Filho et al.(2007)]{silva_filho2007}
-Silva Filho, R. L. L., Motejunas, P. R., Hipólito, O., \& Lobo, M. B. C. M. (2007).
-A evasão no ensino superior brasileiro.
-\textit{Cadernos de Pesquisa}, 37(132), 641--659.
-
-\bibitem[Tinto(1975)]{tinto1975}
-Tinto, V. (1975).
-Dropout from higher education: A theoretical synthesis of recent research.
-\textit{Review of Educational Research}, 45(1), 89--125.
-
-\bibitem[Vasconcelos et al.(2019)]{vasconcelos2019}
-Vasconcelos, I. C. O., Lima, D. A., \& Araújo, M. A. D. (2019).
-Democratização do acesso ao ensino superior e permanência estudantil.
-\textit{Ensaio: Avaliação e Políticas Públicas em Educação}, 27(104), 692--715.
 
 \end{thebibliography}
 
